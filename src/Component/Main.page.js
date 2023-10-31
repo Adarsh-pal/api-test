@@ -1,18 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import useFetchData from './useFetchData'
 import { useState } from 'react';
-
-
-import ".//style.css";
-
-import DateEditor from "react-tabulator/lib/editors/DateEditor";
-import MultiValueFormatter from "react-tabulator/lib/formatters/MultiValueFormatter";
-// import MultiSelectEditor from "react-tabulator/lib/editors/MultiSelectEditor";
-
-import "react-tabulator/lib/styles.css"; // default theme
-import "react-tabulator/css/bootstrap/tabulator_bootstrap.min.css"; // use Theme(s)
-
-import { ReactTabulator, reactFormatter } from "react-tabulator";
+import Tabulator from './TabulatorContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 function SimpleButton(props) {
     const rowData = props.cell._cell.row.data;
@@ -20,38 +10,46 @@ function SimpleButton(props) {
     return <button onClick={() => alert(rowData.name)}>{cellValue}</button>;
 }
 
-const historyArr = [];
+let historyArr = [];
 
 const Home = () => {
 
     const [limit, setLimit] = useState(1);
-    const marker = useRef(-1);
+    const [data, setData]= useState([]);
+    const [marker, setMarker] = useState(-1);
+    const [finalPage, setFinalPage] = useState(false);
+  //  let currPos = useRef(-1);
 
-    const { data: fetchedData, isLoading, error, isSuccess, refetch } = useFetchData(limit, historyArr.length > 0 ? historyArr[marker.current] : '');
+
+    const queryClient = useQueryClient();
+    const { data: fetchedData, isLoading, error} = useFetchData(limit, historyArr[marker]?? '');
 
     if (isLoading) return 'Loading...'
 
     if (error) return 'An error has occurred: ' + error.message;
 
-    const newData = fetchedData?.data?.servers?.map((item) => {
+    let newData = fetchedData?.data?.servers?.map((item) => {
         return {
             name: item.name,
             id: item.id,
             status: item.status
         }
     });
+        
+    
+    if (newData.length!=0) {
+        const lastId = newData[newData.length - 1].id
+        const isAvailable = historyArr.find((id) => {
+            return id == lastId;
+        });
 
-    if (newData) {
-        historyArr.push(newData[newData.length - 1].id);
-        if (historyArr.length > 1) {
-            marker.current = marker.current + 1;
+        if(!isAvailable){
+            historyArr.push(newData[newData.length - 1].id);
         }
-        else {
-
-            marker.current = 0;
-            // console.log(marker, historyArr);
-        }
+    
     }
+
+    
 
     const columns = [
         { title: "Name", field: "name", width: 150 },
@@ -66,13 +64,6 @@ const Home = () => {
     // const clearData = () => {
     //     this.setState({ data: [] });
     // };
-
-
-    const options = {
-        height: 150,
-        movableRows: true,
-        movableColumns: true
-    };
     return (
         <div>
 
@@ -83,18 +74,39 @@ const Home = () => {
             </h3>
             {newData &&
                 <>
-                    <ReactTabulator columns={columns} data={newData} />
+                    
+                    <Tabulator data={newData}/>
+    
                     <div>
-                        <input type='number' onChange={(e) => setLimit(e.target.value)} value={limit}></input>
+                        <input type='number' onChange={(e) => {
+                            
+                            setLimit(e.target.value)
+                            setMarker(-1);
+                            historyArr = []
+                            
+                            }} value={limit}></input>
                         <button onClick={() => {
-                            marker--;
-                            refetch(limit, historyArr[marker]);
+                            
+                            if(marker> 0){
+                                
+                                
+                                setMarker((marker) => marker - 1);
+                            
+                            }
+                            else{
+                               
+                                setMarker(-1);
+                            }
                         }}
 
-                            disabled={historyArr.length == 1}>Prev</button>
+                            disabled={marker <0}>Prev</button>
                         <button onClick={() => {
-                            refetch(limit, marker);
-                        }}>Next</button>
+                            
+                            
+                            setMarker((marker) => marker + 1);
+
+                            
+                        }} disabled={newData.length == 0}>Next</button>
                     </div>
                 </>
             }
