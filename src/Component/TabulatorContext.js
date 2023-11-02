@@ -17,13 +17,13 @@ const Tabulator = ({data}) => {
 
     const columns = [
         { title: "Name", field: "name", width: 150 },
-        { title: "Id", field: "id", hozAlign: "left" },
-        { title: "Status", field: "status" },
+        { title: "Fingerprint", field: "fingerprint", hozAlign: "left" },
+        { title: "Type", field: "type" },
     ];
 
 
     const options = {
-        height: 150,
+        rowHeight : 100,
         movableRows: true,
         movableColumns: true
         
@@ -31,9 +31,10 @@ const Tabulator = ({data}) => {
    
     return (
 
-        <ReactTabulator columns={columns} data={data}/>
+        <ReactTabulator columns={columns} data={data} options={options}/>
     
   )
+
 }
 
 export default Tabulator;
